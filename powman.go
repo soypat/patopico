@@ -5,8 +5,11 @@ package patopico
 import (
 	"device"
 	"runtime/volatile"
+	"time"
 	"unsafe"
 )
+
+const tracelog = true
 
 // POWMAN base address for RP2350
 const powmanBase = 0x40100000
@@ -182,6 +185,10 @@ func (ps PowerState) IsDomainOn(domain PowerDomain) bool {
 //
 // csdk: hardware_powman/powman.c:30 void powman_write(volatile uint32_t *reg, uint32_t value)
 func powmanWrite(reg *volatile.Register32, value uint32) {
+	if tracelog {
+		println("hardware_powman/powman.c:30 powman_write", reg, value)
+		serialflush()
+	}
 	reg.Set(powmanPassword | (value & 0xFFFF))
 }
 
@@ -189,6 +196,10 @@ func powmanWrite(reg *volatile.Register32, value uint32) {
 //
 // csdk: hardware_powman/include/hardware/powman.h:110 void powman_set_bits(volatile uint32_t *reg, uint32_t bits)
 func powmanSetBits(reg *volatile.Register32, bits uint32) {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:110 powman_set_bits", reg, bits)
+		serialflush()
+	}
 	// Use atomic set register (base + 0x2000)
 	regAddr := uintptr(unsafe.Pointer(reg))
 	atomicSet := (*volatile.Register32)(unsafe.Pointer(regAddr + 0x2000))
@@ -199,6 +210,10 @@ func powmanSetBits(reg *volatile.Register32, bits uint32) {
 //
 // csdk: hardware_powman/include/hardware/powman.h:124 void powman_clear_bits(volatile uint32_t *reg, uint32_t bits)
 func powmanClearBits(reg *volatile.Register32, bits uint32) {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:124 powman_clear_bits", reg, bits)
+		serialflush()
+	}
 	// Use atomic clear register (base + 0x3000)
 	regAddr := uintptr(unsafe.Pointer(reg))
 	atomicClear := (*volatile.Register32)(unsafe.Pointer(regAddr + 0x3000))
@@ -209,6 +224,10 @@ func powmanClearBits(reg *volatile.Register32, bits uint32) {
 //
 // csdk: hardware_powman/include/hardware/powman.h:146 void powman_timer_start(void)
 func TimerStart() {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:146 powman_timer_start")
+		serialflush()
+	}
 	powmanSetBits(&powmanHW.TIMER, timerRun)
 }
 
@@ -216,6 +235,10 @@ func TimerStart() {
 //
 // csdk: hardware_powman/include/hardware/powman.h:139 void powman_timer_stop(void)
 func TimerStop() {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:139 powman_timer_stop")
+		serialflush()
+	}
 	powmanClearBits(&powmanHW.TIMER, timerRun)
 }
 
@@ -223,6 +246,10 @@ func TimerStop() {
 //
 // csdk: hardware_powman/include/hardware/powman.h:132 bool powman_timer_is_running(void)
 func TimerIsRunning() bool {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:132 powman_timer_is_running")
+		serialflush()
+	}
 	return powmanHW.TIMER.Get()&timerRun != 0
 }
 
@@ -230,6 +257,10 @@ func TimerIsRunning() bool {
 //
 // csdk: hardware_powman/powman.c:46 uint64_t powman_timer_get_ms(void)
 func TimerGetMs() uint64 {
+	if tracelog {
+		println("hardware_powman/powman.c:46 powman_timer_get_ms")
+		serialflush()
+	}
 	// Need to ensure upper 32 bits don't change during read
 	hi := powmanHW.READ_TIME_UPPER.Get()
 	for {
@@ -246,6 +277,10 @@ func TimerGetMs() uint64 {
 //
 // csdk: hardware_powman/powman.c:36 void powman_timer_set_ms(uint64_t time_ms)
 func TimerSetMs(timeMs uint64) {
+	if tracelog {
+		println("hardware_powman/powman.c:36 powman_timer_set_ms", timeMs)
+		serialflush()
+	}
 	wasRunning := TimerIsRunning()
 	if wasRunning {
 		TimerStop()
@@ -263,6 +298,10 @@ func TimerSetMs(timeMs uint64) {
 //
 // csdk: hardware_powman/powman.c:64 void powman_timer_set_1khz_tick_source_lposc(void)
 func TimerSetTickSourceLPOSC() {
+	if tracelog {
+		println("hardware_powman/powman.c:64 powman_timer_set_1khz_tick_source_lposc")
+		serialflush()
+	}
 	TimerSetTickSourceLPOSCWithHz(32768)
 }
 
@@ -271,6 +310,10 @@ func TimerSetTickSourceLPOSC() {
 //
 // csdk: hardware_powman/powman.c:68 void powman_timer_set_1khz_tick_source_lposc_with_hz(uint32_t lposc_freq_hz)
 func TimerSetTickSourceLPOSCWithHz(lposcFreqHz uint32) {
+	if tracelog {
+		println("hardware_powman/powman.c:68 powman_timer_set_1khz_tick_source_lposc_with_hz", lposcFreqHz)
+		serialflush()
+	}
 	wasRunning := TimerIsRunning()
 	if wasRunning {
 		TimerStop()
@@ -291,6 +334,10 @@ func TimerSetTickSourceLPOSCWithHz(lposcFreqHz uint32) {
 //
 // csdk: hardware_powman/powman.c:82 void powman_timer_set_1khz_tick_source_xosc(void)
 func TimerSetTickSourceXOSC() {
+	if tracelog {
+		println("hardware_powman/powman.c:82 powman_timer_set_1khz_tick_source_xosc")
+		serialflush()
+	}
 	TimerSetTickSourceXOSCWithHz(12_000_000)
 }
 
@@ -299,6 +346,10 @@ func TimerSetTickSourceXOSC() {
 //
 // csdk: hardware_powman/powman.c:86 void powman_timer_set_1khz_tick_source_xosc_with_hz(uint32_t xosc_freq_hz)
 func TimerSetTickSourceXOSCWithHz(xoscFreqHz uint32) {
+	if tracelog {
+		println("hardware_powman/powman.c:86 powman_timer_set_1khz_tick_source_xosc_with_hz", xoscFreqHz)
+		serialflush()
+	}
 	wasRunning := TimerIsRunning()
 	if wasRunning {
 		TimerStop()
@@ -339,6 +390,10 @@ func gpioToExtTimeRefSource(gpio uint8) uint32 {
 //
 // csdk: hardware_powman/powman.c:126 void powman_timer_set_1khz_tick_source_gpio(uint32_t gpio)
 func TimerSetTickSourceGPIO(gpio uint8) {
+	if tracelog {
+		println("hardware_powman/powman.c:126 powman_timer_set_1khz_tick_source_gpio", gpio)
+		serialflush()
+	}
 	wasRunning := TimerIsRunning()
 	if wasRunning {
 		TimerStop()
@@ -360,6 +415,10 @@ func TimerSetTickSourceGPIO(gpio uint8) {
 //
 // csdk: hardware_powman/powman.c:131 void powman_timer_enable_gpio_1hz_sync(uint32_t gpio)
 func TimerEnableGPIO1HzSync(gpio uint8) {
+	if tracelog {
+		println("hardware_powman/powman.c:131 powman_timer_enable_gpio_1hz_sync", gpio)
+		serialflush()
+	}
 	wasRunning := TimerIsRunning()
 	if wasRunning {
 		TimerStop()
@@ -379,6 +438,10 @@ func TimerEnableGPIO1HzSync(gpio uint8) {
 //
 // csdk: hardware_powman/powman.c:136 void powman_timer_disable_gpio_1hz_sync(void)
 func TimerDisableGPIO1HzSync() {
+	if tracelog {
+		println("hardware_powman/powman.c:136 powman_timer_disable_gpio_1hz_sync")
+		serialflush()
+	}
 	powmanClearBits(&powmanHW.TIMER, timerUseGPIO1Hz)
 }
 
@@ -387,6 +450,10 @@ func TimerDisableGPIO1HzSync() {
 //
 // csdk: hardware_powman/include/hardware/powman.h:156 void powman_clear_alarm(void)
 func ClearAlarm() {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:156 powman_clear_alarm")
+		serialflush()
+	}
 	powmanClearBits(&powmanHW.TIMER, timerAlarm)
 }
 
@@ -394,6 +461,10 @@ func ClearAlarm() {
 //
 // csdk: hardware_powman/powman.c:226 void powman_timer_enable_alarm_at_ms(uint64_t alarm_time_ms)
 func TimerEnableAlarmAtMs(alarmTimeMs uint64) {
+	if tracelog {
+		println("hardware_powman/powman.c:226 powman_timer_enable_alarm_at_ms", alarmTimeMs)
+		serialflush()
+	}
 	powmanSetBits(&powmanHW.INTE, inteTimer)
 	powmanClearBits(&powmanHW.TIMER, timerAlarmEnab)
 	// Alarm must be disabled to set the alarm time
@@ -409,6 +480,10 @@ func TimerEnableAlarmAtMs(alarmTimeMs uint64) {
 //
 // csdk: hardware_powman/powman.c:239 void powman_timer_disable_alarm(void)
 func TimerDisableAlarm() {
+	if tracelog {
+		println("hardware_powman/powman.c:239 powman_timer_disable_alarm")
+		serialflush()
+	}
 	powmanClearBits(&powmanHW.INTE, inteTimer)
 	powmanClearBits(&powmanHW.TIMER, timerAlarmEnab)
 }
@@ -417,6 +492,10 @@ func TimerDisableAlarm() {
 //
 // csdk: hardware_powman/powman.c:140 powman_power_state powman_get_power_state(void)
 func GetPowerState() PowerState {
+	if tracelog {
+		println("hardware_powman/powman.c:140 powman_get_power_state")
+		serialflush()
+	}
 	stateReg := ^powmanHW.STATE.Get() & stateCurrentMask
 	return PowerState(stateReg)
 }
@@ -427,6 +506,10 @@ func GetPowerState() PowerState {
 //
 // csdk: hardware_powman/powman.c:152 int powman_set_power_state(powman_power_state state)
 func SetPowerState(state PowerState) error {
+	if tracelog {
+		println("hardware_powman/powman.c:152 powman_set_power_state", state)
+		serialflush()
+	}
 	// Clear req ignored in case it has been set
 	powmanClearBits(&powmanHW.STATE, stateReqIgnored)
 
@@ -466,6 +549,10 @@ func SetPowerState(state PowerState) error {
 //
 // csdk: hardware_powman/powman.c:196 bool powman_configure_wakeup_state(powman_power_state sleep_state, powman_power_state wakeup_state)
 func ConfigureWakeupState(sleepState, wakeupState PowerState) bool {
+	if tracelog {
+		println("hardware_powman/powman.c:196 powman_configure_wakeup_state", sleepState, wakeupState)
+		serialflush()
+	}
 	// Must be entering P1 state (SWCORE OFF)
 	valid := !sleepState.IsDomainOn(PowerDomainSwitchedCore)
 	// Must be waking to P0 state (SWCORE ON)
@@ -513,6 +600,10 @@ func ConfigureWakeupState(sleepState, wakeupState PowerState) bool {
 //
 // csdk: hardware_powman/powman.c:244 void powman_enable_alarm_wakeup_at_ms(uint64_t alarm_time_ms)
 func EnableAlarmWakeup(alarmTimeMs uint64) {
+	if tracelog {
+		println("hardware_powman/powman.c:244 powman_enable_alarm_wakeup_at_ms", alarmTimeMs)
+		serialflush()
+	}
 	TimerEnableAlarmAtMs(alarmTimeMs)
 	powmanSetBits(&powmanHW.TIMER, timerPwrupOnAlarm)
 }
@@ -521,6 +612,10 @@ func EnableAlarmWakeup(alarmTimeMs uint64) {
 //
 // csdk: hardware_powman/powman.c:249 void powman_disable_alarm_wakeup(void)
 func DisableAlarmWakeup() {
+	if tracelog {
+		println("hardware_powman/powman.c:249 powman_disable_alarm_wakeup")
+		serialflush()
+	}
 	TimerDisableAlarm()
 	powmanClearBits(&powmanHW.TIMER, timerPwrupOnAlarm)
 }
@@ -533,6 +628,10 @@ func DisableAlarmWakeup() {
 //
 // csdk: hardware_powman/powman.c:254 void powman_enable_gpio_wakeup(uint gpio_wakeup_num, uint32_t gpio, bool edge, bool high)
 func EnableGPIOWakeup(wakeupNum uint8, gpio uint8, edge bool, high bool) {
+	if tracelog {
+		println("hardware_powman/powman.c:254 powman_enable_gpio_wakeup", wakeupNum, gpio, edge, high)
+		serialflush()
+	}
 	if wakeupNum > 3 {
 		return
 	}
@@ -565,6 +664,10 @@ func EnableGPIOWakeup(wakeupNum uint8, gpio uint8, edge bool, high bool) {
 //
 // csdk: hardware_powman/powman.c:273 void powman_disable_gpio_wakeup(uint gpio_wakeup_num)
 func DisableGPIOWakeup(wakeupNum uint8) {
+	if tracelog {
+		println("hardware_powman/powman.c:273 powman_disable_gpio_wakeup", wakeupNum)
+		serialflush()
+	}
 	if wakeupNum > 3 {
 		return
 	}
@@ -576,6 +679,10 @@ func DisableGPIOWakeup(wakeupNum uint8) {
 //
 // csdk: hardware_powman/powman.c:278 void powman_disable_all_wakeups(void)
 func DisableAllWakeups() {
+	if tracelog {
+		println("hardware_powman/powman.c:278 powman_disable_all_wakeups")
+		serialflush()
+	}
 	for i := uint8(0); i < 4; i++ {
 		DisableGPIOWakeup(i)
 	}
@@ -587,6 +694,10 @@ func DisableAllWakeups() {
 //
 // csdk: hardware_powman/include/hardware/powman.h:272 void powman_set_debug_power_request_ignored(bool ignored)
 func SetDebugPowerRequestIgnored(ignored bool) {
+	if tracelog {
+		println("hardware_powman/include/hardware/powman.h:272 powman_set_debug_power_request_ignored", ignored)
+		serialflush()
+	}
 	if ignored {
 		powmanSetBits(&powmanHW.DBG_PWRCFG, 1)
 	} else {
@@ -599,6 +710,10 @@ func SetDebugPowerRequestIgnored(ignored bool) {
 //
 // csdk: (direct register access) powman_hw->vreg_ctrl |= POWMAN_VREG_CTRL_UNLOCK_BITS
 func UnlockVREG() {
+	if tracelog {
+		println("(direct register access) powman_hw->vreg_ctrl |= POWMAN_VREG_CTRL_UNLOCK_BITS")
+		serialflush()
+	}
 	powmanSetBits(&powmanHW.VREG_CTRL, vregCtrlUnlock)
 }
 
@@ -691,6 +806,10 @@ func DefaultSleepConfig() SleepConfig {
 //
 // csdk: pico-examples/powman/powman_example.c:34 static int powman_example_off(void)
 func (cfg *SleepConfig) Sleep() error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:34 powman_example_off")
+		serialflush()
+	}
 	valid := ConfigureWakeupState(cfg.SleepState, cfg.WakeupState)
 	if !valid {
 		return errInvalidState
@@ -723,6 +842,10 @@ func (cfg *SleepConfig) Sleep() error {
 //
 // csdk: pico-examples/powman/powman_example.c:99 int powman_example_off_for_ms(uint64_t duration_ms)
 func SleepForMs(durationMs uint64) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:99 powman_example_off_for_ms", durationMs)
+		serialflush()
+	}
 	cfg := DefaultSleepConfig()
 	return cfg.SleepForMs(durationMs)
 }
@@ -731,6 +854,10 @@ func SleepForMs(durationMs uint64) error {
 //
 // csdk: pico-examples/powman/powman_example.c:99 int powman_example_off_for_ms(uint64_t duration_ms)
 func (cfg *SleepConfig) SleepForMs(durationMs uint64) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:99 powman_example_off_for_ms", durationMs)
+		serialflush()
+	}
 	alarmTime := TimerGetMs() + durationMs
 	EnableAlarmWakeup(alarmTime)
 	return cfg.Sleep()
@@ -741,6 +868,10 @@ func (cfg *SleepConfig) SleepForMs(durationMs uint64) error {
 //
 // csdk: pico-examples/powman/powman_example.c:91 int powman_example_off_until_time(uint64_t abs_time_ms)
 func SleepUntilMs(absTimeMs uint64) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:91 powman_example_off_until_time", absTimeMs)
+		serialflush()
+	}
 	cfg := DefaultSleepConfig()
 	return cfg.SleepUntilMs(absTimeMs)
 }
@@ -749,6 +880,10 @@ func SleepUntilMs(absTimeMs uint64) error {
 //
 // csdk: pico-examples/powman/powman_example.c:91 int powman_example_off_until_time(uint64_t abs_time_ms)
 func (cfg *SleepConfig) SleepUntilMs(absTimeMs uint64) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:91 powman_example_off_until_time", absTimeMs)
+		serialflush()
+	}
 	EnableAlarmWakeup(absTimeMs)
 	return cfg.Sleep()
 }
@@ -758,6 +893,10 @@ func (cfg *SleepConfig) SleepUntilMs(absTimeMs uint64) error {
 //
 // csdk: pico-examples/powman/powman_example.c:61 int powman_example_off_until_gpio_high(int gpio)
 func SleepUntilGPIOHigh(gpio uint8) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:61 powman_example_off_until_gpio_high", gpio)
+		serialflush()
+	}
 	cfg := DefaultSleepConfig()
 	return cfg.SleepUntilGPIOHigh(gpio)
 }
@@ -766,6 +905,10 @@ func SleepUntilGPIOHigh(gpio uint8) error {
 //
 // csdk: pico-examples/powman/powman_example.c:61 int powman_example_off_until_gpio_high(int gpio)
 func (cfg *SleepConfig) SleepUntilGPIOHigh(gpio uint8) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:61 powman_example_off_until_gpio_high", gpio)
+		serialflush()
+	}
 	EnableGPIOWakeup(0, gpio, false, true) // Level-triggered, active high
 	return cfg.Sleep()
 }
@@ -775,6 +918,10 @@ func (cfg *SleepConfig) SleepUntilGPIOHigh(gpio uint8) error {
 //
 // csdk: pico-examples/powman/powman_example.c:76 int powman_example_off_until_gpio_low(int gpio)
 func SleepUntilGPIOLow(gpio uint8) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:76 powman_example_off_until_gpio_low", gpio)
+		serialflush()
+	}
 	cfg := DefaultSleepConfig()
 	return cfg.SleepUntilGPIOLow(gpio)
 }
@@ -783,6 +930,10 @@ func SleepUntilGPIOLow(gpio uint8) error {
 //
 // csdk: pico-examples/powman/powman_example.c:76 int powman_example_off_until_gpio_low(int gpio)
 func (cfg *SleepConfig) SleepUntilGPIOLow(gpio uint8) error {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:76 powman_example_off_until_gpio_low", gpio)
+		serialflush()
+	}
 	EnableGPIOWakeup(0, gpio, false, false) // Level-triggered, active low
 	return cfg.Sleep()
 }
@@ -792,8 +943,16 @@ func (cfg *SleepConfig) SleepUntilGPIOLow(gpio uint8) error {
 //
 // csdk: pico-examples/powman/powman_example.c:14 void powman_example_init(uint64_t abs_time_ms)
 func Init(absTimeMs uint64) {
+	if tracelog {
+		println("pico-examples/powman/powman_example.c:14 powman_example_init", absTimeMs)
+		serialflush()
+	}
 	TimerStart()
 	TimerSetMs(absTimeMs)
 	// Allow power down even with debugger connected
 	SetDebugPowerRequestIgnored(true)
+}
+
+func serialflush() {
+	time.Sleep(time.Millisecond)
 }
