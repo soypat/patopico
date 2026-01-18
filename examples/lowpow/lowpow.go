@@ -14,18 +14,33 @@ const sleepDuration = 10_000
 func main() {
 	// Initialize POWMAN with current time (0ms at boot)
 	patopico.Init(0)
-
-	// Configure LED for work indication
-	led := machine.LED
-	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
-
+	println("start program")
 	// Main loop: do work, sleep, repeat
 	for {
+		// Configure LED for work indication
+		led := machine.LED
+		led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 		doWork(led)
+		println("work done")
+		time.Sleep(5 * time.Second)
+		println("LED off")
+		led.Low()
 
-		// Enter low power sleep for 2 minutes
-		// Note: This will restart from main() on wakeup
+		time.Sleep(5 * time.Second)
+		println("go to sleep :)")
+		// isolate LED for lowest power consumption.
+		// If this is not done the deep sleep will cause SIO to light the LED up, defeating low power mode purpose.
+		// Keep an eye out for weird peripheral behaviour after deep sleep.
+		// Serial is glitchy and may eventually break unless lots of sleep is added.
+		// Least glitchy results by increasing serialflush sleep.
+		patopico.PinIsolate(uint8(machine.LED))
+		// Enter low power sleep.
 		patopico.SleepForMs(sleepDuration)
+		time.Sleep(time.Millisecond)
+		// Serial will have been completely deinitialized after deep sleep.
+		machine.InitSerial()
+		time.Sleep(time.Millisecond) // wait a bit for serial to start up.
+		println("good morning sunshine :)")
 	}
 }
 

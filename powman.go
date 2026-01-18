@@ -14,6 +14,9 @@ const tracelog = true
 // POWMAN base address for RP2350
 const powmanBase = 0x40100000
 
+// PADS_BANK0 base address for RP2350
+const padsBank0Base = 0x40038000
+
 // Password required for all POWMAN register writes (upper 16 bits)
 const powmanPassword = 0x5afe0000
 
@@ -137,6 +140,29 @@ const (
 const (
 	vregCtrlUnlock = 1 << 13
 )
+
+// PADS_BANK0 GPIO control bits
+// csdk: hardware_regs/include/hardware/regs/pads_bank0.h
+const (
+	padISO      = 1 << 8 // Pad isolation control (default 1 = isolated)
+	padOD       = 1 << 7 // Output disable
+	padIE       = 1 << 6 // Input enable
+	padDriveLSB = 4      // Drive strength (2 bits)
+	padPUE      = 1 << 3 // Pull up enable
+	padPDE      = 1 << 2 // Pull down enable
+	padSchmitt  = 1 << 1 // Schmitt trigger enable
+	padSlewfast = 1 << 0 // Slew rate control
+)
+
+// padsBank0Regs represents the memory-mapped PADS_BANK0 registers
+// csdk: hardware_structs/include/hardware/structs/pads_bank0.h:26 pads_bank0_hw_t
+type padsBank0Regs struct {
+	VOLTAGE_SELECT volatile.Register32 // 0x00 - Voltage select
+	IO             [48]volatile.Register32
+}
+
+// padsBank0HW provides access to PADS_BANK0 hardware registers
+var padsBank0HW = (*padsBank0Regs)(unsafe.Pointer(uintptr(padsBank0Base)))
 
 // PowerDomain represents RP2350 power domains.
 //
@@ -953,6 +979,43 @@ func Init(absTimeMs uint64) {
 	SetDebugPowerRequestIgnored(true)
 }
 
+// PinIsolate configures a GPIO pin to isolation mode for lowest power consumption.
+// This sets the ISO bit which disconnects the pad from the GPIO logic, disables
+// output, disables input, and clears pull-up/pull-down resistors.
+// Use this before entering deep sleep to minimize current draw on unused pins.
+//
+// csdk: hardware_regs/include/hardware/regs/pads_bank0.h:38 PADS_BANK0_GPIO0_ISO_BITS
+func PinIsolate(gpio uint8) {
+	if tracelog {
+		println("PinIsolate", gpio)
+		serialflush()
+	}
+	if gpio >= 48 {
+		return
+	}
+	// Set ISO (isolation), OD (output disable)
+	// Clear IE (input enable), PUE (pull-up), PDE (pull-down)
+	// This gives the lowest power state for the pad
+	padsBank0HW.IO[gpio].Set(padISO | padOD | padSchmitt)
+}
+
+// PinDeisolate removes pad isolation from a GPIO pin, restoring normal operation.
+// Call this after waking from sleep if you need to use the pin again.
+//
+// csdk: hardware_gpio/gpio.c:51 hw_clear_bits(&pads_bank0_hw->io[gpio], PADS_BANK0_GPIO0_ISO_BITS)
+func PinDeisolate(gpio uint8) {
+	if tracelog {
+		println("PinDeisolate", gpio)
+		serialflush()
+	}
+	if gpio >= 48 {
+		return
+	}
+	// Clear ISO bit, enable input, keep schmitt trigger, set default pull-down
+	// This matches typical GPIO defaults after gpio_init
+	padsBank0HW.IO[gpio].Set(padIE | padPDE | padSchmitt | (1 << padDriveLSB))
+}
+
 func serialflush() {
-	time.Sleep(time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 }
